@@ -392,7 +392,7 @@
 /* ============================================================
    APPS SCRIPT ENDPOINT — solo cambia esta línea si re-despliegas
 ============================================================ */
-const API = 'https://script.google.com/macros/s/AKfycbznjFlWZeijaKYwyLippvWSWVPKKE4-lnVp0dZ6MyiYfZxJqYpuQPK4sl4UKic6T65l/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwf0AtFjc3ToH3EcnglcPFqcjwvJtVg63JyonIO5O5xvf7W2Vw_UrkiUq3_eRyxLN99/exec';
 const CSV_TARIFAS_RM    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=0&single=true&output=csv';
 const CSV_TARIFAS_OTRAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=1944527052&single=true&output=csv';
 
@@ -593,8 +593,8 @@ async function init() {
       fetchSheet('extras'),
       fetchSheet('inventario'),
       fetchSheet('comunas').catch(function(e){ console.warn('Comunas fetch falló:', e.message); return null; }),
-      fetchCSVExterno(CSV_TARIFAS_RM).catch(function(){ return ''; }),
-      fetchCSVExterno(CSV_TARIFAS_OTRAS).catch(function(){ return ''; })
+      fetchSheet('tarifas_rm').catch(function(e){ console.warn('Tarifas RM falló:', e.message); return null; }),
+      fetchSheet('tarifas_otras').catch(function(e){ console.warn('Tarifas otras falló:', e.message); return null; })
     ]);
 
     PACKS  = parsePacks(rP.rows, rP.raw);
@@ -609,8 +609,8 @@ async function init() {
       renderComunaList('');
     }
 
-    parseTarifas(rTRM, 'rm');
-    parseTarifas(rTOT, 'otras');
+    if (rTRM && rTRM.rows) parseTarifas(rTRM.rows, 'rm');
+    if (rTOT && rTOT.rows) parseTarifas(rTOT.rows, 'otras');
     if (!INV.length || !EXTRAS.length) throw new Error('Datos incompletos');
 
     banner('ok', '✓ Precios y stock cargados en tiempo real desde Google Sheets.');
@@ -645,9 +645,8 @@ async function fetchCSVExterno(url) {
   } catch(e) { return ''; }
 }
 
-function parseTarifas(csvText, tipo) {
-  if (!csvText) return;
-  var rows = parseCSV(csvText);
+function parseTarifas(rows, tipo) {
+  if (!rows || !rows.length) return;
   rows.forEach(function(r) {
     var comunaKey = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'comuna'; });
     var valorKey  = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'valor final'; });
@@ -658,7 +657,7 @@ function parseTarifas(csvText, tipo) {
     if (tipo === 'rm')    TARIFAS_RM[comuna]    = valor;
     if (tipo === 'otras') TARIFAS_OTRAS[comuna] = valor;
   });
-  console.log('Tarifas ' + tipo + ':', Object.keys(tipo==='rm'?TARIFAS_RM:TARIFAS_OTRAS).length);
+  console.log('Tarifas ' + tipo + ' cargadas:', Object.keys(tipo==='rm'?TARIFAS_RM:TARIFAS_OTRAS).length, 'comunas');
 }
 
 function getTarifaComuna(nombre) {
