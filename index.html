@@ -484,7 +484,7 @@ const FB = {
 /* ============================================================
    ESTADO
 ============================================================ */
-let PACKS=[], INV=[], EXTRAS=[], COMUNAS_SANTIAGO=[], COMUNAS_OTRAS=[];
+let PACKS=[], INV=[], EXTRAS=[], COMUNAS_SANTIAGO=[], COMUNAS_OTRAS    = ['Cartagena','Con Con','Rancagua','Valparaíso','Viña del Mar'];
 let selPack=null, cQty={}, selExtras={}, selExtrasQty={}, selModulosConsolas={};
 let stockComprometido = {}; // {nombreItem: cantidadComprometida} para la fecha seleccionada
 let cargandoStockFecha = false;
@@ -598,7 +598,7 @@ async function init() {
     } else {
       // Fallback completo de comunas si el sheet no responde
       COMUNAS_SANTIAGO = ['Alhué','Buin','Calera de Tango','Cerrillos','Cerro Navia','Colina','Conchalí','Curacaví','El Bosque','El Monte','Estación Central','Huechuraba','Independencia','Isla de Maipo','La Cisterna','La Florida','La Granja','La Pintana','La Reina','Lampa','Las Condes','Lo Barnechea','Lo Espejo','Lo Prado','Macul','Maipú','María Pinto','Melipilla','Padre Hurtado','Paine','Pedro Aguirre Cerda','Peñaflor','Peñalolén','Pirque','Providencia','Pudahuel','Puente Alto','Quilicura','Quinta Normal','Recoleta','Renca','San Bernardo','San Joaquín','San José de Maipo','San Miguel','San Pedro','San Ramón','Santiago','Talagante','Tiltil','Vitacura','Ñuñoa'];
-      COMUNAS_OTRAS    = ['Algarrobo','Alto Hospicio','Ancud','Angol','Antofagasta','Arica','Calama','Chiguayante','Chillán','Chillán Viejo','Coihaique','Concepción','Constitución','Copiapó','Coquimbo','Coronel','Curicó','Freire','Graneros','Hualpén','Iquique','La Serena','La Unión','Linares','Lota','Los Ángeles','Los Vilos','Machalí','Molina','Ovalle','Padre Las Casas','Puerto Montt','Puerto Natales','Punta Arenas','Quilpué','Rancagua','Rengo','San Antonio','San Carlos','San Felipe','San Fernando','Santa Cruz','Talca','Talcahuano','Temuco','Tocopilla','Valdivia','Vallenar','Valparaíso','Victoria','Villarrica','Viña del Mar'];
+      COMUNAS_OTRAS    = ['Cartagena','Con Con','Rancagua','Valparaíso','Viña del Mar'];
       renderComunaList('');
     }
 
@@ -614,7 +614,7 @@ async function init() {
     INV    = FB.inventario;
     EXTRAS = FB.extras;
     COMUNAS_SANTIAGO = ['Alhué','Buin','Calera de Tango','Cerrillos','Cerro Navia','Colina','Conchalí','Curacaví','El Bosque','El Monte','Estación Central','Huechuraba','Independencia','Isla de Maipo','La Cisterna','La Florida','La Granja','La Pintana','La Reina','Lampa','Las Condes','Lo Barnechea','Lo Espejo','Lo Prado','Macul','Maipú','María Pinto','Melipilla','Padre Hurtado','Paine','Pedro Aguirre Cerda','Peñaflor','Peñalolén','Pirque','Providencia','Pudahuel','Puente Alto','Quilicura','Quinta Normal','Recoleta','Renca','San Bernardo','San Joaquín','San José de Maipo','San Miguel','San Pedro','San Ramón','Santiago','Talagante','Tiltil','Vitacura','Ñuñoa'];
-    COMUNAS_OTRAS    = ['Algarrobo','Alto Hospicio','Ancud','Angol','Antofagasta','Arica','Calama','Chiguayante','Chillán','Chillán Viejo','Coihaique','Concepción','Constitución','Copiapó','Coquimbo','Coronel','Curicó','Freire','Graneros','Hualpén','Iquique','La Serena','La Unión','Linares','Lota','Los Ángeles','Los Vilos','Machalí','Molina','Ovalle','Padre Las Casas','Puerto Montt','Puerto Natales','Punta Arenas','Quilpué','Rancagua','Rengo','San Antonio','San Carlos','San Felipe','San Fernando','Santa Cruz','Talca','Talcahuano','Temuco','Tocopilla','Valdivia','Vallenar','Valparaíso','Victoria','Villarrica','Viña del Mar'];
+    COMUNAS_OTRAS    = ['Cartagena','Con Con','Rancagua','Valparaíso','Viña del Mar'];
     renderComunaList('');
   }
 
@@ -628,7 +628,7 @@ async function init() {
 ============================================================ */
 function parseComunas(rows) {
   COMUNAS_SANTIAGO = [];
-  COMUNAS_OTRAS    = [];
+  COMUNAS_OTRAS    = ['Cartagena','Con Con','Rancagua','Valparaíso','Viña del Mar'];
   // Leer TODAS las filas de ambas columnas independientemente
   // (una columna puede tener más filas que la otra)
   rows.forEach(function(r) {
