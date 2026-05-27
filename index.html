@@ -308,6 +308,7 @@
       </div>
     </div>
   </div>
+  <div id="traslado-aviso" style="display:none;font-size:.78rem;color:var(--teal2);background:rgba(13,148,136,.08);border:1px solid rgba(13,148,136,.25);border-radius:7px;padding:5px 10px;margin-top:-4px;margin-bottom:8px"></div>
 
   <!-- FESTEJADO -->
   <div class="section-head"><div class="icon">🎂</div><h2>El/la festejado/a</h2><div class="line"></div></div>
@@ -392,6 +393,8 @@
    APPS SCRIPT ENDPOINT — solo cambia esta línea si re-despliegas
 ============================================================ */
 const API = 'https://script.google.com/macros/s/AKfycbznjFlWZeijaKYwyLippvWSWVPKKE4-lnVp0dZ6MyiYfZxJqYpuQPK4sl4UKic6T65l/exec';
+const CSV_TARIFAS_RM    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=0&single=true&output=csv';
+const CSV_TARIFAS_OTRAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=1944527052&single=true&output=csv';
 
 /* ============================================================
    CONFIGURACIÓN ESTÁTICA DE PACKS
@@ -484,7 +487,9 @@ const FB = {
 /* ============================================================
    ESTADO
 ============================================================ */
-let PACKS=[], INV=[], EXTRAS=[], COMUNAS_SANTIAGO=[], COMUNAS_OTRAS    = ['Cartagena','Con Con','Rancagua','Valparaíso','Viña del Mar'];
+let PACKS=[], INV=[], EXTRAS=[], COMUNAS_SANTIAGO=[], COMUNAS_OTRAS=[];
+let TARIFAS_RM = {}, TARIFAS_OTRAS = {};
+let tarifaTraslado = 0;
 let selPack=null, cQty={}, selExtras={}, selExtrasQty={}, selModulosConsolas={};
 let stockComprometido = {}; // {nombreItem: cantidadComprometida} para la fecha seleccionada
 let cargandoStockFecha = false;
@@ -583,11 +588,13 @@ async function fetchSheet(sheet) {
 ============================================================ */
 async function init() {
   try {
-    const [rP, rE, rI, rC] = await Promise.all([
+    const [rP, rE, rI, rC, rTRM, rTOT] = await Promise.all([
       fetchSheet('packs'),
       fetchSheet('extras'),
       fetchSheet('inventario'),
-      fetchSheet('comunas').catch(function(e){ console.warn('Comunas fetch falló, usando fallback:', e.message); return null; })
+      fetchSheet('comunas').catch(function(e){ console.warn('Comunas fetch falló:', e.message); return null; }),
+      fetchCSVExterno(CSV_TARIFAS_RM).catch(function(){ return ''; }),
+      fetchCSVExterno(CSV_TARIFAS_OTRAS).catch(function(){ return ''; })
     ]);
 
     PACKS  = parsePacks(rP.rows, rP.raw);
@@ -598,10 +605,12 @@ async function init() {
     } else {
       // Fallback completo de comunas si el sheet no responde
       COMUNAS_SANTIAGO = ['Alhué','Buin','Calera de Tango','Cerrillos','Cerro Navia','Colina','Conchalí','Curacaví','El Bosque','El Monte','Estación Central','Huechuraba','Independencia','Isla de Maipo','La Cisterna','La Florida','La Granja','La Pintana','La Reina','Lampa','Las Condes','Lo Barnechea','Lo Espejo','Lo Prado','Macul','Maipú','María Pinto','Melipilla','Padre Hurtado','Paine','Pedro Aguirre Cerda','Peñaflor','Peñalolén','Pirque','Providencia','Pudahuel','Puente Alto','Quilicura','Quinta Normal','Recoleta','Renca','San Bernardo','San Joaquín','San José de Maipo','San Miguel','San Pedro','San Ramón','Santiago','Talagante','Tiltil','Vitacura','Ñuñoa'];
-      COMUNAS_OTRAS    = ['Cartagena','Con Con','Rancagua','Valparaíso','Viña del Mar'];
+      COMUNAS_OTRAS    = ['Algarrobo','Alto Hospicio','Ancud','Angol','Antofagasta','Arica','Calama','Chiguayante','Chillán','Chillán Viejo','Coihaique','Concepción','Constitución','Copiapó','Coquimbo','Coronel','Curicó','Freire','Graneros','Hualpén','Iquique','La Serena','La Unión','Linares','Lota','Los Ángeles','Los Vilos','Machalí','Molina','Ovalle','Padre Las Casas','Puerto Montt','Puerto Natales','Punta Arenas','Quilpué','Rancagua','Rengo','San Antonio','San Carlos','San Felipe','San Fernando','Santa Cruz','Talca','Talcahuano','Temuco','Tocopilla','Valdivia','Vallenar','Valparaíso','Victoria','Villarrica','Viña del Mar'];
       renderComunaList('');
     }
 
+    parseTarifas(rTRM, 'rm');
+    parseTarifas(rTOT, 'otras');
     if (!INV.length || !EXTRAS.length) throw new Error('Datos incompletos');
 
     banner('ok', '✓ Precios y stock cargados en tiempo real desde Google Sheets.');
@@ -614,7 +623,7 @@ async function init() {
     INV    = FB.inventario;
     EXTRAS = FB.extras;
     COMUNAS_SANTIAGO = ['Alhué','Buin','Calera de Tango','Cerrillos','Cerro Navia','Colina','Conchalí','Curacaví','El Bosque','El Monte','Estación Central','Huechuraba','Independencia','Isla de Maipo','La Cisterna','La Florida','La Granja','La Pintana','La Reina','Lampa','Las Condes','Lo Barnechea','Lo Espejo','Lo Prado','Macul','Maipú','María Pinto','Melipilla','Padre Hurtado','Paine','Pedro Aguirre Cerda','Peñaflor','Peñalolén','Pirque','Providencia','Pudahuel','Puente Alto','Quilicura','Quinta Normal','Recoleta','Renca','San Bernardo','San Joaquín','San José de Maipo','San Miguel','San Pedro','San Ramón','Santiago','Talagante','Tiltil','Vitacura','Ñuñoa'];
-    COMUNAS_OTRAS    = ['Cartagena','Con Con','Rancagua','Valparaíso','Viña del Mar'];
+    COMUNAS_OTRAS    = ['Algarrobo','Alto Hospicio','Ancud','Angol','Antofagasta','Arica','Calama','Chiguayante','Chillán','Chillán Viejo','Coihaique','Concepción','Constitución','Copiapó','Coquimbo','Coronel','Curicó','Freire','Graneros','Hualpén','Iquique','La Serena','La Unión','Linares','Lota','Los Ángeles','Los Vilos','Machalí','Molina','Ovalle','Padre Las Casas','Puerto Montt','Puerto Natales','Punta Arenas','Quilpué','Rancagua','Rengo','San Antonio','San Carlos','San Felipe','San Fernando','Santa Cruz','Talca','Talcahuano','Temuco','Tocopilla','Valdivia','Vallenar','Valparaíso','Victoria','Villarrica','Viña del Mar'];
     renderComunaList('');
   }
 
@@ -626,24 +635,48 @@ async function init() {
 /* ============================================================
    COMUNAS — parseo y selector interactivo
 ============================================================ */
+async function fetchCSVExterno(url) {
+  try {
+    var proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+    var r = await fetch(proxy, { cache: 'no-store' });
+    if (!r.ok) return '';
+    var d = await r.json();
+    return d.contents || '';
+  } catch(e) { return ''; }
+}
+
+function parseTarifas(csvText, tipo) {
+  if (!csvText) return;
+  var rows = parseCSV(csvText);
+  rows.forEach(function(r) {
+    var comunaKey = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'comuna'; });
+    var valorKey  = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'valor final'; });
+    if (!comunaKey || !valorKey) return;
+    var comuna = (r[comunaKey]||'').trim();
+    var valor  = parseInt((r[valorKey]||'0').toString().replace(/[^0-9]/g,'')) || 0;
+    if (!comuna) return;
+    if (tipo === 'rm')    TARIFAS_RM[comuna]    = valor;
+    if (tipo === 'otras') TARIFAS_OTRAS[comuna] = valor;
+  });
+  console.log('Tarifas ' + tipo + ':', Object.keys(tipo==='rm'?TARIFAS_RM:TARIFAS_OTRAS).length);
+}
+
+function getTarifaComuna(nombre) {
+  if (!nombre) return 0;
+  if (TARIFAS_RM[nombre]    !== undefined) return TARIFAS_RM[nombre];
+  if (TARIFAS_OTRAS[nombre] !== undefined) return TARIFAS_OTRAS[nombre];
+  return 0;
+}
+
 function parseComunas(rows) {
   COMUNAS_SANTIAGO = [];
-  COMUNAS_OTRAS    = ['Cartagena','Con Con','Rancagua','Valparaíso','Viña del Mar'];
-  // Leer TODAS las filas de ambas columnas independientemente
-  // (una columna puede tener más filas que la otra)
+  COMUNAS_OTRAS    = [];
   rows.forEach(function(r) {
-    // Buscar la clave correcta sin importar mayúsculas/minúsculas ni espacios
-    var cKey = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'comuna'; });
-    var oKey = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'otras comunas'; });
-    var c = cKey ? (r[cKey]||'').trim() : '';
-    var o = oKey ? (r[oKey]||'').trim() : '';
+    var c = (r['Comuna']        || r['comuna']        || '').trim();
+    var o = (r['Otras comunas'] || r['otras comunas'] || r['Otras Comunas'] || '').trim();
     if (c) COMUNAS_SANTIAGO.push(c);
     if (o) COMUNAS_OTRAS.push(o);
   });
-  // Ordenar alfabéticamente
-  COMUNAS_SANTIAGO.sort(function(a,b){ return a.localeCompare(b,'es'); });
-  COMUNAS_OTRAS.sort(function(a,b){    return a.localeCompare(b,'es'); });
-  console.log('Comunas cargadas — Santiago:', COMUNAS_SANTIAGO.length, '| Otras:', COMUNAS_OTRAS.length);
   renderComunaList('');
 }
 
@@ -703,7 +736,18 @@ function cerrarComunaDropdown() {
 function seleccionarComuna(nombre) {
   document.getElementById('comuna').value         = nombre;
   document.getElementById('comuna-display').value = nombre;
+  tarifaTraslado = getTarifaComuna(nombre);
   cerrarComunaDropdown();
+  if (selPack) updateResumen();
+  var elT = document.getElementById('traslado-aviso');
+  if (elT) {
+    if (tarifaTraslado > 0) {
+      elT.textContent = 'Traslado a ' + nombre + ': ' + fmt(tarifaTraslado);
+      elT.style.display = 'block';
+    } else {
+      elT.style.display = 'none';
+    }
+  }
 }
 
 function seleccionarComunaEl(el) {
@@ -936,93 +980,91 @@ function consolasParaModulo(extraIdx, slot) {
 function renderExtras() {
   if (!selPack) return;
   ge('extras-list').innerHTML = EXTRAS.map(function(e, i) {
-    var conflict  = (EXTRA_BLOCK[e.nombre]||[]).includes(selPack);
-    var isHora    = esHoraExtra(e.nombre);
-    var isModulo  = esModuloExtra(e.nombre);
-    var maxQty    = isHora ? 6 : isModulo ? (stockConsolasDisponible() + (selExtrasQty[i]||0)) : 1;
-    var qty       = selExtrasQty[i] || 0;
-    var sel       = qty > 0 || !!selExtras[i];
-    var stockDisp = stockExtraDisp(e.nombre);
-    var noStock   = !isHora && !isModulo && stockDisp <= 0 && !sel;
-    var noStockMod= isModulo && maxQty <= 0 && qty === 0;
-    var dis       = conflict || noStock || noStockMod;
-    var reason    = conflict ? 'Incluido en este pack' : (noStock||noStockMod) ? 'Sin consolas disponibles' : '';
+    var conflict    = (EXTRA_BLOCK[e.nombre]||[]).includes(selPack);
+    var isHora      = esHoraExtra(e.nombre);
+    var isModulo    = esModuloExtra(e.nombre);
+    var maxQty      = isHora ? 6 : isModulo ? (stockConsolasDisponible() + (selExtrasQty[i]||0)) : 1;
+    var qty         = selExtrasQty[i] || 0;
+    var sel         = qty > 0 || !!selExtras[i];
+    var stockDisp   = stockExtraDisp(e.nombre);
+    var noStock     = !isHora && !isModulo && stockDisp <= 0 && !sel;
+    var noStockMod  = isModulo && maxQty <= 0 && qty === 0;
+    var dis         = conflict || noStock || noStockMod;
+    var reason      = dis ? (conflict ? "Incluido en este pack" : "Sin stock disponible") : "";
 
     if (isHora) {
       var canAdd = !dis && qty < 6;
       var canSub = qty > 0;
-      return '<div class="extra-card '+(sel?'sel':'')+' '+(dis?'dis':'')+'">'+
-        '<div class="e-chk" style="margin-top:4px">'+(sel?'✓':'')+'</div>'+
-        '<div style="flex:1">'+
-          '<div class="e-name">'+e.nombre+'</div>'+
-          '<div class="e-price">'+(e.precio>0?fmt(e.precio)+' c/u adicional':'Sin costo adicional')+' (máx 6)</div>'+
-          (dis?'<div class="e-reason">✓ '+reason+'</div>':'')+
-          '<div class="e-qty-ctrl">'+
-            '<button class="e-qty-btn" onclick="changeExtraQty('+i+',-1)" '+(canSub?'':'disabled')+'>−</button>'+
-            '<span class="e-qty-val">'+qty+'</span>'+
-            '<button class="e-qty-btn" onclick="changeExtraQty('+i+',1)" '+(canAdd?'':'disabled')+'>+</button>'+
-            '<span class="e-qty-label">'+(qty>0?qty+' hora'+(qty>1?'s':'')+' extra':'Ninguna seleccionada')+'</span>'+
-          '</div>'+
-        '</div>'+
-      '</div>';
+      return [
+        '<div class="extra-card ' + (sel?'sel':'') + ' ' + (dis?'dis':'') + '">',
+          '<div class="e-chk" style="margin-top:4px">' + (sel?'&#10003;':'') + '</div>',
+          '<div style="flex:1">',
+            '<div class="e-name">' + e.nombre + '</div>',
+            '<div class="e-price">' + (e.precio>0 ? fmt(e.precio)+' c/u adicional' : 'Sin costo adicional') + ' (m&aacute;x 6)</div>',
+            (dis ? '<div class="e-reason">&#10003; ' + reason + '</div>' : ''),
+            '<div class="e-qty-ctrl">',
+              '<button class="e-qty-btn" onclick="changeExtraQty(' + i + ',-1)"' + (canSub?'':' disabled') + '>&#8722;</button>',
+              '<span class="e-qty-val">' + qty + '</span>',
+              '<button class="e-qty-btn" onclick="changeExtraQty(' + i + ',1)"' + (canAdd?'':' disabled') + '>+</button>',
+              '<span class="e-qty-label">' + (qty>0 ? qty+' hora'+(qty>1?'s':'')+' extra' : 'Ninguna seleccionada') + '</span>',
+            '</div>',
+          '</div>',
+        '</div>'
+      ].join('');
 
     } else if (isModulo) {
       var dispTotal = stockConsolasDisponible() + qty;
-      var canAdd = !dis && qty < dispTotal;
-      var canSub = qty > 0;
-      // Generar selector de consola para cada slot
+      var canAddM   = !dis && qty < dispTotal;
+      var canSubM   = qty > 0;
       var slots = '';
       for (var s = 0; s < qty; s++) {
         var consActual = (selModulosConsolas[i]||{})[s] || '';
         var opciones   = consolasParaModulo(i, s);
-        var opts = '<option value="">— Selecciona consola —</option>' +
-          opciones.map(function(c){
-            return '<option value="'+c.nombre+'"'+(c.nombre===consActual?' selected':'')+'>'+c.nombre+'</option>';
+        var opts = '<option value="">&#8212; Selecciona consola &#8212;</option>' +
+          opciones.map(function(c) {
+            return '<option value="' + c.nombre + '"' + (c.nombre===consActual?' selected':'') + '>' + c.nombre + '</option>';
           }).join('');
-        slots += '<div class="modulo-consola-row">'+
-          '<label>Módulo '+(s+1)+'</label>'+
-          '<select onchange="asignarConsolaModulo('+i+','+s+',this.value)">'+opts+'</select>'+
-        '</div>';
+        slots += '<div class="modulo-consola-row">' +
+          '<label>M&#243;dulo ' + (s+1) + '</label>' +
+          '<select onchange="asignarConsolaModulo(' + i + ',' + s + ',this.value)">' + opts + '</select>' +
+          '</div>';
       }
-      return '<div class="extra-card '+(sel?'sel':'')+' '+(dis?'dis':'')+'" style="flex-direction:column;align-items:stretch">'+
-        '<div style="display:flex;align-items:flex-start;gap:10px">'+
-          '<div class="e-chk" style="margin-top:4px">'+(sel?'✓':'')+'</div>'+
-          '<div style="flex:1">'+
-            '<div class="e-name">'+e.nombre+'</div>'+
-            '<div class="e-price">'+(e.precio>0?fmt(e.precio)+' c/u adicional':'Sin costo adicional')+
-              ' ('+dispTotal+' disponible'+(dispTotal!==1?'s':'')+')</div>'+
-            (dis?'<div class="e-reason">✓ '+reason+'</div>':'')+
-            '<div class="e-qty-ctrl">'+
-              '<button class="e-qty-btn" onclick="changeExtraQty('+i+',-1)" '+(canSub?'':'disabled')+'>−</button>'+
-              '<span class="e-qty-val">'+qty+'</span>'+
-              '<button class="e-qty-btn" onclick="changeExtraQty('+i+',1)" '+(canAdd?'':'disabled')+'>+</button>'+
-              '<span class="e-qty-label">'+(qty>0?qty+' módulo'+(qty>1?'s':''):'Ninguno seleccionado')+'</span>'+
-            '</div>'+
-          '</div>'+
-        '</div>'+
-        (qty > 0 ? '<div class="modulo-consola-list">'+slots+'</div>' : '')+
-      '</div>';
+      return [
+        '<div class="extra-card ' + (sel?'sel':'') + ' ' + (dis?'dis':'') + '" style="flex-direction:column;align-items:stretch">',
+          '<div style="display:flex;align-items:flex-start;gap:10px">',
+            '<div class="e-chk" style="margin-top:4px">' + (sel?'&#10003;':'') + '</div>',
+            '<div style="flex:1">',
+              '<div class="e-name">' + e.nombre + '</div>',
+              '<div class="e-price">' + (e.precio>0 ? fmt(e.precio)+' c/u adicional' : 'Sin costo adicional') +
+                ' (' + dispTotal + ' disponible' + (dispTotal!==1?'s':'') + ')</div>',
+              (dis ? '<div class="e-reason">&#10003; ' + reason + '</div>' : ''),
+              '<div class="e-qty-ctrl">',
+                '<button class="e-qty-btn" onclick="changeExtraQty(' + i + ',-1)"' + (canSubM?'':' disabled') + '>&#8722;</button>',
+                '<span class="e-qty-val">' + qty + '</span>',
+                '<button class="e-qty-btn" onclick="changeExtraQty(' + i + ',1)"' + (canAddM?'':' disabled') + '>+</button>',
+                '<span class="e-qty-label">' + (qty>0 ? qty+' m&#243;dulo'+(qty>1?'s':'') : 'Ninguno seleccionado') + '</span>',
+              '</div>',
+            '</div>',
+          '</div>',
+          (qty > 0 ? '<div class="modulo-consola-list">' + slots + '</div>' : ''),
+        '</div>'
+      ].join('');
 
     } else {
-      return '<div class="extra-card '+(sel?'sel':'')+' '+(dis?'dis':'')+'" onclick="'+(dis?'':'toggleExtra('+i+')')+'">'+
-        '<div class="e-chk">'+(sel?'✓':'')+'</div>'+
-        '<div>'+
-          '<div class="e-name">'+e.nombre+'</div>'+
-          '<div class="e-price">'+(e.precio>0?fmt(e.precio)+' adicional':'Sin costo adicional')+(stockDisp<e.stock&&stockDisp>0?' — '+stockDisp+' disp.':'')+'</div>'+
-          (dis?'<div class="e-reason">✓ '+reason+'</div>':'')+
-        '</div>'+
-      '</div>';
+      return [
+        '<div class="extra-card ' + (sel?'sel':'') + ' ' + (dis?'dis':'') + '" onclick="' + (dis?'':'toggleExtra('+i+')') + '">',
+          '<div class="e-chk">' + (sel?'&#10003;':'') + '</div>',
+          '<div>',
+            '<div class="e-name">' + e.nombre + '</div>',
+            '<div class="e-price">' + (e.precio>0 ? fmt(e.precio)+' adicional' : 'Sin costo adicional') +
+              (stockDisp < e.stock && stockDisp > 0 ? ' &#8212; ' + stockDisp + ' disp.' : '') + '</div>',
+            (dis ? '<div class="e-reason">&#10003; ' + reason + '</div>' : ''),
+          '</div>',
+        '</div>'
+      ].join('');
     }
   }).join('');
 }
-
-function asignarConsolaModulo(extraIdx, slot, nombreConsola) {
-  if (!selModulosConsolas[extraIdx]) selModulosConsolas[extraIdx] = {};
-  selModulosConsolas[extraIdx][slot] = nombreConsola;
-  renderExtras();
-  updateResumen();
-}
-
 function toggleExtra(i) {
   selExtras[i] = !selExtras[i];
   selExtrasQty[i] = selExtras[i] ? 1 : 0;
@@ -1084,6 +1126,13 @@ function updateResumen() {
       items.push({lbl: lbl, val: subtotal > 0 ? fmt(subtotal) : 'sin costo'});
     }
   });
+
+    // Traslado según comuna seleccionada
+  if (tarifaTraslado > 0) {
+    var comunaNom = ge('comuna') ? ge('comuna').value : '';
+    total += tarifaTraslado;
+    items.push({lbl: 'Traslado — ' + comunaNom, val: fmt(tarifaTraslado)});
+  }
 
   ge('r-items').innerHTML = items.map(i=>
     `<div class="r-row"><span>${i.lbl}</span><span class="r-val">${i.val}</span></div>`
@@ -1195,7 +1244,13 @@ function enviar() {
     horaTermino:  gv('hf'),
     pack:         pack.nom,
     precioPack:   fmt(pack.precio),
-    precioAnt:    esAnt ? fmt(pack.precioDesc) : '',
+    precioAnt:    (function(){
+      if (!esAnt) return '';
+      var base = precioActivo(pack);
+      var extrasTotal = EXTRAS.reduce(function(s,e,i){ return s + (selExtrasQty[i]||0) * e.precio; }, 0);
+      return fmt(Math.round((base + extrasTotal + tarifaTraslado) * 0.5));
+    })(),
+    traslado:     tarifaTraslado > 0 ? fmt(tarifaTraslado) : '',
     total:        ge('r-total').textContent,
     consolas:     conStr,
     stockVerif:   JSON.stringify(Object.fromEntries(
