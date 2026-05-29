@@ -225,8 +225,10 @@
       <h2>⚡ Generador de links express</h2>
 
       <div class="admin-info">
-        <strong>Regla:</strong> Si envías el catálogo antes de las 19:00 → el cliente tiene <strong>5 horas</strong> para contratar y recibe 1 hora extra gratis.<br>
-        Si lo envías a las 19:00 o después → el plazo se extiende hasta las <strong>12:00 del día siguiente</strong>.
+        <strong>Regla:</strong>
+        Entre 00:00 y 08:59 → plazo hasta las <strong>12:00 del mismo día</strong>.<br>
+        Entre 09:00 y 18:59 → <strong>5 horas</strong> desde el envío.<br>
+        Entre 19:00 y 23:59 → plazo hasta las <strong>12:00 del día siguiente</strong>.
       </div>
 
       <div class="admin-row" style="margin-top:1.2rem">
@@ -1422,15 +1424,31 @@ const ADMIN_KEY  = 'cumplegamer2026';   // ← cambia esta clave
 const BASE_URL   = window.location.origin + window.location.pathname;
 
 function calcularVencimiento(envioISO) {
-  const envio = new Date(envioISO);
-  const h = envio.getHours();
-  let vence;
-  if (h < 19) {
-    // antes de 19:00 → 5 horas desde el envío
-    vence = new Date(envio.getTime() + 5 * 60 * 60 * 1000);
+  // Parsear siempre como hora local para evitar problemas de timezone
+  var horaLocal, envioLocal;
+  if (typeof envioISO === 'string' && envioISO.indexOf('T') !== -1) {
+    var partes = envioISO.split('T');
+    var fecha  = partes[0].split('-');
+    var hora   = partes[1].substring(0,5).split(':');
+    envioLocal = new Date(
+      parseInt(fecha[0]), parseInt(fecha[1])-1, parseInt(fecha[2]),
+      parseInt(hora[0]),  parseInt(hora[1]), 0, 0
+    );
   } else {
-    // 19:00 o después → hasta las 12:00 del día siguiente
-    vence = new Date(envio);
+    envioLocal = new Date(envioISO);
+  }
+  horaLocal = envioLocal.getHours();
+
+  var vence = new Date(envioLocal);
+
+  if (horaLocal >= 0 && horaLocal < 9) {
+    // Madrugada (00:00 - 08:59) → plazo hasta las 12:00 del mismo día
+    vence.setHours(12, 0, 0, 0);
+  } else if (horaLocal >= 9 && horaLocal < 19) {
+    // Día (09:00 - 18:59) → 5 horas desde el envío
+    vence = new Date(envioLocal.getTime() + 5 * 60 * 60 * 1000);
+  } else {
+    // Noche (19:00 - 23:59) → hasta las 12:00 del día siguiente
     vence.setDate(vence.getDate() + 1);
     vence.setHours(12, 0, 0, 0);
   }
