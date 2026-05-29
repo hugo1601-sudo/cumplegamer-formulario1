@@ -392,7 +392,7 @@
 /* ============================================================
    APPS SCRIPT ENDPOINT — solo cambia esta línea si re-despliegas
 ============================================================ */
-const API = 'https://script.google.com/macros/s/AKfycbwf0AtFjc3ToH3EcnglcPFqcjwvJtVg63JyonIO5O5xvf7W2Vw_UrkiUq3_eRyxLN99/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwM-QRO_UMTpy4gUElHaWakHZa1BobZtN46VbFoYFoaSNR3NOyo-DCmZveuuWq40mZR/exec';
 const CSV_TARIFAS_RM    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=0&single=true&output=csv';
 const CSV_TARIFAS_OTRAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=1944527052&single=true&output=csv';
 
@@ -1522,6 +1522,37 @@ function abrirWhatsapp() {
   const link = ge('link-texto').textContent;
   const msg  = '¡Hola! 🎮 Te enviamos el catálogo de CumpleGamer. Si contratas antes del plazo, ¡te regalamos 1 hora extra gratis! 👉 ' + link;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  // Auto-refresh del link box: muestra confirmación visual
+  const box = ge('link-box');
+  box.style.transition = 'background .3s';
+  box.style.background = 'rgba(13,148,136,.18)';
+  const confirmMsg = document.createElement('div');
+  confirmMsg.id = 'whatsapp-confirm';
+  confirmMsg.style.cssText = 'margin-top:8px;font-size:.8rem;color:var(--green);font-weight:700;';
+  confirmMsg.textContent = '✓ WhatsApp abierto — link enviado';
+  // Evitar duplicados
+  var prev = document.getElementById('whatsapp-confirm');
+  if (prev) prev.remove();
+  box.appendChild(confirmMsg);
+  // Resetear después de 4 segundos para nuevo envío
+  setTimeout(function() {
+    box.style.background = '';
+    // Limpiar confirmación
+    var c = document.getElementById('whatsapp-confirm');
+    if (c) c.remove();
+    // Resetear fecha/hora al momento actual para facilitar nuevo envío
+    var now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    ge('admin-dt').value = now.toISOString().slice(0,16);
+    // Ocultar link box para que quede listo para el próximo
+    ge('link-box').style.display = 'none';
+    // Mostrar toast de listo
+    var toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--teal);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+    toast.textContent = '🎮 Listo para generar el próximo link';
+    document.body.appendChild(toast);
+    setTimeout(function(){ toast.remove(); }, 2500);
+  }, 4000);
 }
 
 /* ============================================================
