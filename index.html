@@ -903,6 +903,8 @@ function renderConsolas() {
 
   ge('alert-max').style.display = cur>=max?'block':'none';
   updateResumen();
+  // Re-renderizar extras para actualizar disponibilidad de PS5
+  if (ge('extras-list').innerHTML !== '') renderExtras();
 }
 
 function changeC(nombre, delta) {
@@ -921,6 +923,36 @@ function changeC(nombre, delta) {
 /* ============================================================
    RENDER EXTRAS
 ============================================================ */
+// Extras que requieren una PS5 dedicada (una por unidad del extra)
+function requierePS5(nombre) {
+  var n = nombre.toLowerCase();
+  return n.indexOf('guitar hero') !== -1 ||
+         n.indexOf('vr shooter') !== -1  ||
+         n.indexOf('playstation vr') !== -1 ||
+         n.indexOf('racing') !== -1;
+}
+
+// PS5 elegidas por el cliente que no están asignadas a otros extras PS5
+function ps5Disponibles() {
+  // Total de PS5 elegidas en consolas
+  var totalPS5 = 0;
+  INV.forEach(function(c) {
+    if (c.nombre.toLowerCase().indexOf('play station 5') !== -1 ||
+        c.nombre.toLowerCase().indexOf('playstation 5') !== -1 ||
+        c.nombre.toLowerCase().indexOf('ps5') !== -1) {
+      totalPS5 += (cQty[c.nombre] || 0);
+    }
+  });
+  // Restar PS5 ya ocupadas por otros extras que requieren PS5
+  var ps5Ocupadas = 0;
+  EXTRAS.forEach(function(e, i) {
+    if (requierePS5(e.nombre)) {
+      ps5Ocupadas += (selExtrasQty[i] || (selExtras[i] ? 1 : 0));
+    }
+  });
+  return Math.max(0, totalPS5 - ps5Ocupadas);
+}
+
 function esHoraExtra(nombre) {
   return nombre.toLowerCase().includes('hora extra') || nombre.toLowerCase().includes('hora adicional');
 }
@@ -984,14 +1016,22 @@ function renderExtras() {
     var conflict    = (EXTRA_BLOCK[e.nombre]||[]).includes(selPack);
     var isHora      = esHoraExtra(e.nombre);
     var isModulo    = esModuloExtra(e.nombre);
+    var necesitaPS5 = requierePS5(e.nombre);
     var maxQty      = isHora ? 6 : isModulo ? (stockConsolasDisponible() + (selExtrasQty[i]||0)) : 1;
     var qty         = selExtrasQty[i] || 0;
     var sel         = qty > 0 || !!selExtras[i];
     var stockDisp   = stockExtraDisp(e.nombre);
     var noStock     = !isHora && !isModulo && stockDisp <= 0 && !sel;
     var noStockMod  = isModulo && maxQty <= 0 && qty === 0;
-    var dis         = conflict || noStock || noStockMod;
-    var reason      = dis ? (conflict ? "Incluido en este pack" : "Sin stock disponible") : "";
+    // Validar PS5 disponibles para extras que la requieren
+    var ps5Disp     = necesitaPS5 ? ps5Disponibles() + qty : 99;
+    var sinPS5      = necesitaPS5 && ps5Disp <= 0 && !sel;
+    var dis         = conflict || noStock || noStockMod || sinPS5;
+    var reason      = dis
+      ? (conflict   ? "Incluido en este pack"
+      : sinPS5      ? "Requiere una PS5 — agrega una PS5 a tus consolas"
+      : "Sin stock disponible")
+      : "";
 
     if (isHora) {
       var canAdd = !dis && qty < 6;
@@ -1067,6 +1107,15 @@ function renderExtras() {
   }).join('');
 }
 function toggleExtra(i) {
+  var e = EXTRAS[i];
+  // Si se intenta activar y requiere PS5, validar disponibilidad
+  if (!selExtras[i] && requierePS5(e.nombre)) {
+    var disp = ps5Disponibles();
+    if (disp <= 0) {
+      alert('Este extra requiere una consola PS5. Por favor agrega al menos una PS5 en la selección de consolas.');
+      return;
+    }
+  }
   selExtras[i] = !selExtras[i];
   selExtrasQty[i] = selExtras[i] ? 1 : 0;
   renderExtras(); updateResumen(); calcularHoraTermino();
@@ -1080,6 +1129,14 @@ function changeExtraQty(i, delta) {
   var cur    = selExtrasQty[i] || 0;
   var nv     = cur + delta;
   if (nv < 0 || nv > maxQty) return;
+  // Si se incrementa y requiere PS5, validar que haya suficientes
+  if (delta > 0 && requierePS5(e.nombre)) {
+    var disp = ps5Disponibles();
+    if (disp <= 0) {
+      alert('Este extra requiere una PS5 adicional. No hay PS5 disponibles para este extra.');
+      return;
+    }
+  }
   selExtrasQty[i] = nv;
   selExtras[i]    = nv > 0;
   // Limpiar slots de módulos que ya no existen al reducir
