@@ -44,6 +44,8 @@
   .section-head .icon{width:32px;height:32px;background:var(--purple);border-radius:8px;display:grid;place-items:center;font-size:1rem;flex-shrink:0}
   .section-head h2{font-family:'Rajdhani',sans-serif;font-size:1.15rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--teal2);white-space:nowrap}
   .section-head .line{flex:1;height:1px;background:var(--border)}
+  /* AFTER SCHOOL BADGE */
+  .badge-after{background:rgba(249,115,22,.18);color:var(--orange)}
   .live-badge{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;color:var(--green);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);padding:2px 7px;border-radius:10px;margin-left:8px;vertical-align:middle;font-family:'Nunito',sans-serif;font-weight:600;letter-spacing:0}
   .live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;flex-shrink:0}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
@@ -225,10 +227,8 @@
       <h2>⚡ Generador de links express</h2>
 
       <div class="admin-info">
-        <strong>Regla:</strong>
-        Entre 00:00 y 08:59 → plazo hasta las <strong>12:00 del mismo día</strong>.<br>
-        Entre 09:00 y 18:59 → <strong>5 horas</strong> desde el envío.<br>
-        Entre 19:00 y 23:59 → plazo hasta las <strong>12:00 del día siguiente</strong>.
+        <strong>Regla:</strong> Si envías el catálogo antes de las 19:00 → el cliente tiene <strong>5 horas</strong> para contratar y recibe 1 hora extra gratis.<br>
+        Si lo envías a las 19:00 o después → el plazo se extiende hasta las <strong>12:00 del día siguiente</strong>.
       </div>
 
       <div class="admin-row" style="margin-top:1.2rem">
@@ -272,6 +272,16 @@
   <div class="banner banner-error" id="b-err"></div>
   <div class="banner banner-ok"   id="b-ok"></div>
 
+  <!-- BANNER AFTER SCHOOL -->
+  <div id="banner-afterschool" style="display:none;background:linear-gradient(90deg,rgba(249,115,22,.1),rgba(251,191,36,.08));border:1px solid rgba(249,115,22,.4);border-radius:12px;padding:.9rem 1.2rem;margin:1rem 0;gap:12px;align-items:flex-start">
+    <div style="font-size:1.6rem;flex-shrink:0">🏫</div>
+    <div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;color:var(--orange);letter-spacing:.04em">Promocion Cumple Gamer After School</div>
+      <div style="font-size:.82rem;color:var(--muted);margin-top:2px;line-height:1.5">La fecha seleccionada es dia habil (lunes a jueves, no feriado). Los packs Gamer, Pro y Ultra tienen precios especiales.</div>
+      <div style="font-size:.78rem;color:var(--gold);margin-top:4px;font-weight:600">Pack Gamer $120.000 · Pack Pro $220.000 · Pack Ultra $400.000 (+ traslado)</div>
+    </div>
+  </div>
+
   <!-- BANNER HORA EXTRA EXPRESS -->
   <div class="banner-express" id="b-express" style="display:none">
     <div class="ex-icon">⚡</div>
@@ -310,7 +320,6 @@
       </div>
     </div>
   </div>
-  <div id="traslado-aviso" style="display:none;font-size:.78rem;color:var(--teal2);background:rgba(13,148,136,.08);border:1px solid rgba(13,148,136,.25);border-radius:7px;padding:5px 10px;margin-top:-4px;margin-bottom:8px"></div>
 
   <!-- FESTEJADO -->
   <div class="section-head"><div class="icon">🎂</div><h2>El/la festejado/a</h2><div class="line"></div></div>
@@ -394,9 +403,7 @@
 /* ============================================================
    APPS SCRIPT ENDPOINT — solo cambia esta línea si re-despliegas
 ============================================================ */
-const API = 'https://script.google.com/macros/s/AKfycbwM-QRO_UMTpy4gUElHaWakHZa1BobZtN46VbFoYFoaSNR3NOyo-DCmZveuuWq40mZR/exec';
-const CSV_TARIFAS_RM    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=0&single=true&output=csv';
-const CSV_TARIFAS_OTRAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=1944527052&single=true&output=csv';
+const API = 'https://script.google.com/macros/s/AKfycbznjFlWZeijaKYwyLippvWSWVPKKE4-lnVp0dZ6MyiYfZxJqYpuQPK4sl4UKic6T65l/exec';
 
 /* ============================================================
    CONFIGURACIÓN ESTÁTICA DE PACKS
@@ -427,7 +434,7 @@ const PACK_CFG = {
   },
   'Pack Pro': {
     id:'pro', badge:'Premium', cls:'b-pro', min:3, max:3,
-    horasBase:4, horasExtra:0,
+    horasBase:4, horasExtra:1,
     tag:'3 consolas a elegir',
     blocked:[], blockedReason:{},
     items:['3 Consolas, 3 TV, 3 racks, 6 controles',
@@ -440,7 +447,7 @@ const PACK_CFG = {
   },
   'Pack Ultra': {
     id:'ultra', badge:'Experiencia Total', cls:'b-ultra', min:4, max:4,
-    horasBase:4, horasExtra:0,
+    horasBase:4, horasExtra:1,
     tag:'4 consolas + módulos exclusivos',
     blocked:[],
     blockedReason:{},
@@ -490,8 +497,7 @@ const FB = {
    ESTADO
 ============================================================ */
 let PACKS=[], INV=[], EXTRAS=[], COMUNAS_SANTIAGO=[], COMUNAS_OTRAS=[];
-let TARIFAS_RM = {}, TARIFAS_OTRAS = {};
-let tarifaTraslado = 0;
+let FERIADOS_CACHE = {}; // {YYYY: Set de fechas 'YYYY-MM-DD'}
 let selPack=null, cQty={}, selExtras={}, selExtrasQty={}, selModulosConsolas={};
 let stockComprometido = {}; // {nombreItem: cantidadComprometida} para la fecha seleccionada
 let cargandoStockFecha = false;
@@ -590,13 +596,11 @@ async function fetchSheet(sheet) {
 ============================================================ */
 async function init() {
   try {
-    const [rP, rE, rI, rC, rTRM, rTOT] = await Promise.all([
+    const [rP, rE, rI, rC] = await Promise.all([
       fetchSheet('packs'),
       fetchSheet('extras'),
       fetchSheet('inventario'),
-      fetchSheet('comunas').catch(function(e){ console.warn('Comunas fetch falló:', e.message); return null; }),
-      fetchSheet('tarifas_rm').catch(function(e){ console.warn('Tarifas RM falló:', e.message); return null; }),
-      fetchSheet('tarifas_otras').catch(function(e){ console.warn('Tarifas otras falló:', e.message); return null; })
+      fetchSheet('comunas').catch(function(e){ console.warn('Comunas fetch falló, usando fallback:', e.message); return null; })
     ]);
 
     PACKS  = parsePacks(rP.rows, rP.raw);
@@ -611,8 +615,6 @@ async function init() {
       renderComunaList('');
     }
 
-    if (rTRM && rTRM.rows) parseTarifas(rTRM.rows, 'rm');
-    if (rTOT && rTOT.rows) parseTarifas(rTOT.rows, 'otras');
     if (!INV.length || !EXTRAS.length) throw new Error('Datos incompletos');
 
     banner('ok', '✓ Precios y stock cargados en tiempo real desde Google Sheets.');
@@ -635,40 +637,45 @@ async function init() {
 }
 
 /* ============================================================
+   FERIADOS CHILE — carga automática desde API pública
+============================================================ */
+async function cargarFeriados(year) {
+  if (FERIADOS_CACHE[year]) return FERIADOS_CACHE[year];
+  try {
+    var r = await fetch('https://feriados-cl.netlify.app/api/holidays/' + year, { cache: 'no-store' });
+    var data = await r.json();
+    var fechas = new Set();
+    // La API retorna array de objetos con campo 'date' en formato YYYY-MM-DD
+    var lista = Array.isArray(data) ? data : (data.holidays || data.data || []);
+    lista.forEach(function(f) {
+      var d = f.date || f.fecha || '';
+      if (d) fechas.add(d.substring(0, 10));
+    });
+    FERIADOS_CACHE[year] = fechas;
+    console.log('Feriados ' + year + ' cargados:', fechas.size);
+    return fechas;
+  } catch(e) {
+    console.warn('No se pudieron cargar feriados:', e.message);
+    FERIADOS_CACHE[year] = new Set();
+    return FERIADOS_CACHE[year];
+  }
+}
+
+async function esDiaHabilAfterSchool(fechaStr) {
+  if (!fechaStr) return false;
+  var d = new Date(fechaStr + 'T12:00:00');
+  var diaSemana = d.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab
+  // Solo lunes a jueves
+  if (diaSemana < 1 || diaSemana > 4) return false;
+  // Verificar que no sea feriado
+  var year = d.getFullYear();
+  var feriados = await cargarFeriados(year);
+  return !feriados.has(fechaStr);
+}
+
+/* ============================================================
    COMUNAS — parseo y selector interactivo
 ============================================================ */
-async function fetchCSVExterno(url) {
-  try {
-    var proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-    var r = await fetch(proxy, { cache: 'no-store' });
-    if (!r.ok) return '';
-    var d = await r.json();
-    return d.contents || '';
-  } catch(e) { return ''; }
-}
-
-function parseTarifas(rows, tipo) {
-  if (!rows || !rows.length) return;
-  rows.forEach(function(r) {
-    var comunaKey = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'comuna'; });
-    var valorKey  = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'valor final'; });
-    if (!comunaKey || !valorKey) return;
-    var comuna = (r[comunaKey]||'').trim();
-    var valor  = parseInt((r[valorKey]||'0').toString().replace(/[^0-9]/g,'')) || 0;
-    if (!comuna) return;
-    if (tipo === 'rm')    TARIFAS_RM[comuna]    = valor;
-    if (tipo === 'otras') TARIFAS_OTRAS[comuna] = valor;
-  });
-  console.log('Tarifas ' + tipo + ' cargadas:', Object.keys(tipo==='rm'?TARIFAS_RM:TARIFAS_OTRAS).length, 'comunas');
-}
-
-function getTarifaComuna(nombre) {
-  if (!nombre) return 0;
-  if (TARIFAS_RM[nombre]    !== undefined) return TARIFAS_RM[nombre];
-  if (TARIFAS_OTRAS[nombre] !== undefined) return TARIFAS_OTRAS[nombre];
-  return 0;
-}
-
 function parseComunas(rows) {
   COMUNAS_SANTIAGO = [];
   COMUNAS_OTRAS    = [];
@@ -737,18 +744,7 @@ function cerrarComunaDropdown() {
 function seleccionarComuna(nombre) {
   document.getElementById('comuna').value         = nombre;
   document.getElementById('comuna-display').value = nombre;
-  tarifaTraslado = getTarifaComuna(nombre);
   cerrarComunaDropdown();
-  if (selPack) updateResumen();
-  var elT = document.getElementById('traslado-aviso');
-  if (elT) {
-    if (tarifaTraslado > 0) {
-      elT.textContent = 'Traslado a ' + nombre + ': ' + fmt(tarifaTraslado);
-      elT.style.display = 'block';
-    } else {
-      elT.style.display = 'none';
-    }
-  }
 }
 
 function seleccionarComunaEl(el) {
@@ -792,8 +788,17 @@ function conAnticipacion() {
 }
 
 function precioActivo(pack) {
+  // After School tiene prioridad sobre anticipación (son excluyentes en práctica)
+  if (pack._afterSchool) return pack.precioAfterSchool || pack.precio;
   return conAnticipacion() ? pack.precioDesc : pack.precio;
 }
+
+// Precios After School por pack
+var PRECIOS_AFTER_SCHOOL = {
+  'gamer': 120000,
+  'pro':   220000,
+  'ultra': 400000
+};
 
 /* ============================================================
    RENDER PACKS
@@ -801,15 +806,17 @@ function precioActivo(pack) {
 function renderPacks() {
   const desc = conAnticipacion();
   ge('packs-container').innerHTML = PACKS.map(p => {
-    const pActivo = precioActivo(p);
-    const tieneDesc = desc && p.precioDesc < p.precio;
+    const pActivo    = precioActivo(p);
+    const tieneDesc  = desc && p.precioDesc < p.precio && !p._afterSchool;
+    const tieneAfter = p._afterSchool && PRECIOS_AFTER_SCHOOL[p.id];
     return `
     <div class="pack-card ${selPack===p.id?'selected':''}" onclick="seleccionarPack('${p.id}')">
       <span class="pack-badge ${p.cls}">${p.badge}</span>
-      ${tieneDesc ? `<span class="pack-badge" style="background:rgba(16,185,129,.18);color:#10b981;margin-left:4px">🎉 Precio anticipado</span>` : ''}
+      ${tieneAfter ? `<span class="pack-badge" style="background:rgba(249,115,22,.18);color:#f97316;margin-left:4px">🏫 After School</span>` : ''}
+      ${tieneDesc  ? `<span class="pack-badge" style="background:rgba(16,185,129,.18);color:#10b981;margin-left:4px">🎉 Precio anticipado</span>` : ''}
       <div class="pack-name">${p.nom}</div>
       <div class="pack-price">
-        ${tieneDesc ? `<span style="font-size:.85rem;text-decoration:line-through;opacity:.5;margin-right:6px">${fmt(p.precio)}</span>` : ''}
+        ${(tieneDesc||tieneAfter) ? `<span style="font-size:.85rem;text-decoration:line-through;opacity:.5;margin-right:6px">${fmt(p.precio)}</span>` : ''}
         ${fmt(pActivo)}
       </div>
       <div class="pack-ctag">🕹 ${p.tag}</div>
@@ -903,8 +910,7 @@ function renderConsolas() {
 
   ge('alert-max').style.display = cur>=max?'block':'none';
   updateResumen();
-  // Re-renderizar extras para actualizar disponibilidad de PS5
-  if (ge('extras-list').innerHTML !== '') renderExtras();
+  if (ge('extras-list') && ge('extras-list').innerHTML !== '') renderExtras();
 }
 
 function changeC(nombre, delta) {
@@ -923,36 +929,22 @@ function changeC(nombre, delta) {
 /* ============================================================
    RENDER EXTRAS
 ============================================================ */
-// Extras que requieren una PS5 dedicada (una por unidad del extra)
 function requierePS5(nombre) {
   var n = nombre.toLowerCase();
-  return n.indexOf('guitar hero') !== -1 ||
-         n.indexOf('vr shooter') !== -1  ||
-         n.indexOf('playstation vr') !== -1 ||
-         n.indexOf('racing') !== -1;
+  return n.indexOf('guitar hero') !== -1 || n.indexOf('vr shooter') !== -1 || n.indexOf('playstation vr') !== -1 || n.indexOf('racing') !== -1;
 }
-
-// PS5 elegidas por el cliente que no están asignadas a otros extras PS5
 function ps5Disponibles() {
-  // Total de PS5 elegidas en consolas
-  var totalPS5 = 0;
+  var total = 0;
   INV.forEach(function(c) {
-    if (c.nombre.toLowerCase().indexOf('play station 5') !== -1 ||
-        c.nombre.toLowerCase().indexOf('playstation 5') !== -1 ||
-        c.nombre.toLowerCase().indexOf('ps5') !== -1) {
-      totalPS5 += (cQty[c.nombre] || 0);
-    }
+    if (c.nombre.toLowerCase().indexOf('play station 5') !== -1 || c.nombre.toLowerCase().indexOf('ps5') !== -1)
+      total += (cQty[c.nombre] || 0);
   });
-  // Restar PS5 ya ocupadas por otros extras que requieren PS5
-  var ps5Ocupadas = 0;
+  var ocupadas = 0;
   EXTRAS.forEach(function(e, i) {
-    if (requierePS5(e.nombre)) {
-      ps5Ocupadas += (selExtrasQty[i] || (selExtras[i] ? 1 : 0));
-    }
+    if (requierePS5(e.nombre)) ocupadas += (selExtrasQty[i] || (selExtras[i] ? 1 : 0));
   });
-  return Math.max(0, totalPS5 - ps5Ocupadas);
+  return Math.max(0, total - ocupadas);
 }
-
 function esHoraExtra(nombre) {
   return nombre.toLowerCase().includes('hora extra') || nombre.toLowerCase().includes('hora adicional');
 }
@@ -1013,108 +1005,97 @@ function consolasParaModulo(extraIdx, slot) {
 function renderExtras() {
   if (!selPack) return;
   ge('extras-list').innerHTML = EXTRAS.map(function(e, i) {
-    var conflict    = (EXTRA_BLOCK[e.nombre]||[]).includes(selPack);
-    var isHora      = esHoraExtra(e.nombre);
-    var isModulo    = esModuloExtra(e.nombre);
-    var necesitaPS5 = requierePS5(e.nombre);
-    var maxQty      = isHora ? 6 : isModulo ? (stockConsolasDisponible() + (selExtrasQty[i]||0)) : 1;
-    var qty         = selExtrasQty[i] || 0;
-    var sel         = qty > 0 || !!selExtras[i];
-    var stockDisp   = stockExtraDisp(e.nombre);
-    var noStock     = !isHora && !isModulo && stockDisp <= 0 && !sel;
-    var noStockMod  = isModulo && maxQty <= 0 && qty === 0;
-    // Validar PS5 disponibles para extras que la requieren
-    var ps5Disp     = necesitaPS5 ? ps5Disponibles() + qty : 99;
-    var sinPS5      = necesitaPS5 && ps5Disp <= 0 && !sel;
-    var dis         = conflict || noStock || noStockMod || sinPS5;
-    var reason      = dis
-      ? (conflict   ? "Incluido en este pack"
-      : sinPS5      ? "Requiere una PS5 — agrega una PS5 a tus consolas"
-      : "Sin stock disponible")
-      : "";
+    var conflict  = (EXTRA_BLOCK[e.nombre]||[]).includes(selPack);
+    var isHora    = esHoraExtra(e.nombre);
+    var isModulo  = esModuloExtra(e.nombre);
+    var maxQty    = isHora ? 6 : isModulo ? (stockConsolasDisponible() + (selExtrasQty[i]||0)) : 1;
+    var qty       = selExtrasQty[i] || 0;
+    var sel       = qty > 0 || !!selExtras[i];
+    var stockDisp = stockExtraDisp(e.nombre);
+    var noStock   = !isHora && !isModulo && stockDisp <= 0 && !sel;
+    var noStockMod= isModulo && maxQty <= 0 && qty === 0;
+    var dis       = conflict || noStock || noStockMod;
+    var reason    = conflict ? 'Incluido en este pack' : (noStock||noStockMod) ? 'Sin consolas disponibles' : '';
 
     if (isHora) {
       var canAdd = !dis && qty < 6;
       var canSub = qty > 0;
-      return [
-        '<div class="extra-card ' + (sel?'sel':'') + ' ' + (dis?'dis':'') + '">',
-          '<div class="e-chk" style="margin-top:4px">' + (sel?'&#10003;':'') + '</div>',
-          '<div style="flex:1">',
-            '<div class="e-name">' + e.nombre + '</div>',
-            '<div class="e-price">' + (e.precio>0 ? fmt(e.precio)+' c/u adicional' : 'Sin costo adicional') + ' (m&aacute;x 6)</div>',
-            (dis ? '<div class="e-reason">&#10003; ' + reason + '</div>' : ''),
-            '<div class="e-qty-ctrl">',
-              '<button class="e-qty-btn" onclick="changeExtraQty(' + i + ',-1)"' + (canSub?'':' disabled') + '>&#8722;</button>',
-              '<span class="e-qty-val">' + qty + '</span>',
-              '<button class="e-qty-btn" onclick="changeExtraQty(' + i + ',1)"' + (canAdd?'':' disabled') + '>+</button>',
-              '<span class="e-qty-label">' + (qty>0 ? qty+' hora'+(qty>1?'s':'')+' extra' : 'Ninguna seleccionada') + '</span>',
-            '</div>',
-          '</div>',
-        '</div>'
-      ].join('');
+      return '<div class="extra-card '+(sel?'sel':'')+' '+(dis?'dis':'')+'">'+
+        '<div class="e-chk" style="margin-top:4px">'+(sel?'✓':'')+'</div>'+
+        '<div style="flex:1">'+
+          '<div class="e-name">'+e.nombre+'</div>'+
+          '<div class="e-price">'+(e.precio>0?fmt(e.precio)+' c/u adicional':'Sin costo adicional')+' (máx 6)</div>'+
+          (dis?'<div class="e-reason">✓ '+reason+'</div>':'')+
+          '<div class="e-qty-ctrl">'+
+            '<button class="e-qty-btn" onclick="changeExtraQty('+i+',-1)" '+(canSub?'':'disabled')+'>−</button>'+
+            '<span class="e-qty-val">'+qty+'</span>'+
+            '<button class="e-qty-btn" onclick="changeExtraQty('+i+',1)" '+(canAdd?'':'disabled')+'>+</button>'+
+            '<span class="e-qty-label">'+(qty>0?qty+' hora'+(qty>1?'s':'')+' extra':'Ninguna seleccionada')+'</span>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
 
     } else if (isModulo) {
       var dispTotal = stockConsolasDisponible() + qty;
-      var canAddM   = !dis && qty < dispTotal;
-      var canSubM   = qty > 0;
+      var canAdd = !dis && qty < dispTotal;
+      var canSub = qty > 0;
+      // Generar selector de consola para cada slot
       var slots = '';
       for (var s = 0; s < qty; s++) {
         var consActual = (selModulosConsolas[i]||{})[s] || '';
         var opciones   = consolasParaModulo(i, s);
-        var opts = '<option value="">&#8212; Selecciona consola &#8212;</option>' +
-          opciones.map(function(c) {
-            return '<option value="' + c.nombre + '"' + (c.nombre===consActual?' selected':'') + '>' + c.nombre + '</option>';
+        var opts = '<option value="">— Selecciona consola —</option>' +
+          opciones.map(function(c){
+            return '<option value="'+c.nombre+'"'+(c.nombre===consActual?' selected':'')+'>'+c.nombre+'</option>';
           }).join('');
-        slots += '<div class="modulo-consola-row">' +
-          '<label>M&#243;dulo ' + (s+1) + '</label>' +
-          '<select onchange="asignarConsolaModulo(' + i + ',' + s + ',this.value)">' + opts + '</select>' +
-          '</div>';
+        slots += '<div class="modulo-consola-row">'+
+          '<label>Módulo '+(s+1)+'</label>'+
+          '<select onchange="asignarConsolaModulo('+i+','+s+',this.value)">'+opts+'</select>'+
+        '</div>';
       }
-      return [
-        '<div class="extra-card ' + (sel?'sel':'') + ' ' + (dis?'dis':'') + '" style="flex-direction:column;align-items:stretch">',
-          '<div style="display:flex;align-items:flex-start;gap:10px">',
-            '<div class="e-chk" style="margin-top:4px">' + (sel?'&#10003;':'') + '</div>',
-            '<div style="flex:1">',
-              '<div class="e-name">' + e.nombre + '</div>',
-              '<div class="e-price">' + (e.precio>0 ? fmt(e.precio)+' c/u adicional' : 'Sin costo adicional') +
-                ' (' + dispTotal + ' disponible' + (dispTotal!==1?'s':'') + ')</div>',
-              (dis ? '<div class="e-reason">&#10003; ' + reason + '</div>' : ''),
-              '<div class="e-qty-ctrl">',
-                '<button class="e-qty-btn" onclick="changeExtraQty(' + i + ',-1)"' + (canSubM?'':' disabled') + '>&#8722;</button>',
-                '<span class="e-qty-val">' + qty + '</span>',
-                '<button class="e-qty-btn" onclick="changeExtraQty(' + i + ',1)"' + (canAddM?'':' disabled') + '>+</button>',
-                '<span class="e-qty-label">' + (qty>0 ? qty+' m&#243;dulo'+(qty>1?'s':'') : 'Ninguno seleccionado') + '</span>',
-              '</div>',
-            '</div>',
-          '</div>',
-          (qty > 0 ? '<div class="modulo-consola-list">' + slots + '</div>' : ''),
-        '</div>'
-      ].join('');
+      return '<div class="extra-card '+(sel?'sel':'')+' '+(dis?'dis':'')+'" style="flex-direction:column;align-items:stretch">'+
+        '<div style="display:flex;align-items:flex-start;gap:10px">'+
+          '<div class="e-chk" style="margin-top:4px">'+(sel?'✓':'')+'</div>'+
+          '<div style="flex:1">'+
+            '<div class="e-name">'+e.nombre+'</div>'+
+            '<div class="e-price">'+(e.precio>0?fmt(e.precio)+' c/u adicional':'Sin costo adicional')+
+              ' ('+dispTotal+' disponible'+(dispTotal!==1?'s':'')+')</div>'+
+            (dis?'<div class="e-reason">✓ '+reason+'</div>':'')+
+            '<div class="e-qty-ctrl">'+
+              '<button class="e-qty-btn" onclick="changeExtraQty('+i+',-1)" '+(canSub?'':'disabled')+'>−</button>'+
+              '<span class="e-qty-val">'+qty+'</span>'+
+              '<button class="e-qty-btn" onclick="changeExtraQty('+i+',1)" '+(canAdd?'':'disabled')+'>+</button>'+
+              '<span class="e-qty-label">'+(qty>0?qty+' módulo'+(qty>1?'s':''):'Ninguno seleccionado')+'</span>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        (qty > 0 ? '<div class="modulo-consola-list">'+slots+'</div>' : '')+
+      '</div>';
 
     } else {
-      return [
-        '<div class="extra-card ' + (sel?'sel':'') + ' ' + (dis?'dis':'') + '" onclick="' + (dis?'':'toggleExtra('+i+')') + '">',
-          '<div class="e-chk">' + (sel?'&#10003;':'') + '</div>',
-          '<div>',
-            '<div class="e-name">' + e.nombre + '</div>',
-            '<div class="e-price">' + (e.precio>0 ? fmt(e.precio)+' adicional' : 'Sin costo adicional') +
-              (stockDisp < e.stock && stockDisp > 0 ? ' &#8212; ' + stockDisp + ' disp.' : '') + '</div>',
-            (dis ? '<div class="e-reason">&#10003; ' + reason + '</div>' : ''),
-          '</div>',
-        '</div>'
-      ].join('');
+      return '<div class="extra-card '+(sel?'sel':'')+' '+(dis?'dis':'')+'" onclick="'+(dis?'':'toggleExtra('+i+')')+'">'+
+        '<div class="e-chk">'+(sel?'✓':'')+'</div>'+
+        '<div>'+
+          '<div class="e-name">'+e.nombre+'</div>'+
+          '<div class="e-price">'+(e.precio>0?fmt(e.precio)+' adicional':'Sin costo adicional')+(stockDisp<e.stock&&stockDisp>0?' — '+stockDisp+' disp.':'')+'</div>'+
+          (dis?'<div class="e-reason">✓ '+reason+'</div>':'')+
+        '</div>'+
+      '</div>';
     }
   }).join('');
 }
+
+function asignarConsolaModulo(extraIdx, slot, nombreConsola) {
+  if (!selModulosConsolas[extraIdx]) selModulosConsolas[extraIdx] = {};
+  selModulosConsolas[extraIdx][slot] = nombreConsola;
+  renderExtras();
+  updateResumen();
+}
+
 function toggleExtra(i) {
-  var e = EXTRAS[i];
-  // Si se intenta activar y requiere PS5, validar disponibilidad
-  if (!selExtras[i] && requierePS5(e.nombre)) {
-    var disp = ps5Disponibles();
-    if (disp <= 0) {
-      alert('Este extra requiere una consola PS5. Por favor agrega al menos una PS5 en la selección de consolas.');
-      return;
-    }
+  if (!selExtras[i] && requierePS5(EXTRAS[i].nombre) && ps5Disponibles() <= 0) {
+    alert('Este extra requiere una PS5. Agrega al menos una PS5 en tus consolas.');
+    return;
   }
   selExtras[i] = !selExtras[i];
   selExtrasQty[i] = selExtras[i] ? 1 : 0;
@@ -1129,14 +1110,6 @@ function changeExtraQty(i, delta) {
   var cur    = selExtrasQty[i] || 0;
   var nv     = cur + delta;
   if (nv < 0 || nv > maxQty) return;
-  // Si se incrementa y requiere PS5, validar que haya suficientes
-  if (delta > 0 && requierePS5(e.nombre)) {
-    var disp = ps5Disponibles();
-    if (disp <= 0) {
-      alert('Este extra requiere una PS5 adicional. No hay PS5 disponibles para este extra.');
-      return;
-    }
-  }
   selExtrasQty[i] = nv;
   selExtras[i]    = nv > 0;
   // Limpiar slots de módulos que ya no existen al reducir
@@ -1157,11 +1130,14 @@ function updateResumen() {
   const precio = precioActivo(pack);
   let items=[], total=precio;
 
-  items.push({lbl:pack.nom, val:fmt(precio)});
+  items.push({lbl:pack.nom + (pack._afterSchool ? ' (After School)' : ''), val:fmt(precio)});
+  if (pack._afterSchool) items.push({lbl:'Precio normal: '+fmt(pack.precio), val:'descuento aplicado'});
 
   const selC = INV.filter(c=>(cQty[c.nombre]||0)>0);
   if (selC.length)
     items.push({lbl:'Consolas: '+selC.map(c=>cQty[c.nombre]+'x '+c.nombre).join(', '), val:'incluido'});
+  if ((pack.horasExtra||0) > 0)
+    items.push({lbl:'Hora extra regalada - incluida en '+pack.nom, val:'GRATIS'});
   // Mostrar consolas reservadas por el pack (ej: Switch 1 en Ultra)
   if (pack.reservado) {
     Object.entries(pack.reservado).forEach(function([nom, info]) {
@@ -1184,13 +1160,6 @@ function updateResumen() {
       items.push({lbl: lbl, val: subtotal > 0 ? fmt(subtotal) : 'sin costo'});
     }
   });
-
-    // Traslado según comuna seleccionada
-  if (tarifaTraslado > 0) {
-    var comunaNom = ge('comuna') ? ge('comuna').value : '';
-    total += tarifaTraslado;
-    items.push({lbl: 'Traslado — ' + comunaNom, val: fmt(tarifaTraslado)});
-  }
 
   ge('r-items').innerHTML = items.map(i=>
     `<div class="r-row"><span>${i.lbl}</span><span class="r-val">${i.val}</span></div>`
@@ -1302,13 +1271,7 @@ function enviar() {
     horaTermino:  gv('hf'),
     pack:         pack.nom,
     precioPack:   fmt(pack.precio),
-    precioAnt:    (function(){
-      if (!esAnt) return '';
-      var base = precioActivo(pack);
-      var extrasTotal = EXTRAS.reduce(function(s,e,i){ return s + (selExtrasQty[i]||0) * e.precio; }, 0);
-      return fmt(Math.round((base + extrasTotal + tarifaTraslado) * 0.5));
-    })(),
-    traslado:     tarifaTraslado > 0 ? fmt(tarifaTraslado) : '',
+    precioAnt:    esAnt ? fmt(pack.precioDesc) : '',
     total:        ge('r-total').textContent,
     consolas:     conStr,
     stockVerif:   JSON.stringify(Object.fromEntries(
@@ -1368,9 +1331,42 @@ function enviar() {
    AL CAMBIAR FECHA — recalcula descuento en tiempo real
 ============================================================ */
 function onFechaChange() {
-  renderPacks();
-  if (selPack) updateResumen();
+  verificarAfterSchool().then(function() {
+    renderPacks();
+    if (selPack) updateResumen();
+  });
   consultarStockFecha();
+}
+
+async function verificarAfterSchool() {
+  var fechaVal = ge('fecha').value;
+  var banner   = ge('banner-afterschool');
+
+  // Ocultar si no hay fecha
+  if (!banner) return;
+  if (!fechaVal) { banner.style.display = 'none'; PACKS.forEach(function(p){ p._afterSchool = false; }); return; }
+
+  var esHabil = await esDiaHabilAfterSchool(fechaVal);
+
+  if (esHabil) {
+    // Aplicar precios After School a packs Gamer, Pro y Ultra
+    var hayDescuento = false;
+    PACKS.forEach(function(p) {
+      if (PRECIOS_AFTER_SCHOOL[p.id]) {
+        p._afterSchool = true;
+        p.precioAfterSchool = PRECIOS_AFTER_SCHOOL[p.id];
+        hayDescuento = true;
+      } else {
+        p._afterSchool = false;
+      }
+    });
+    if (hayDescuento) {
+      banner.style.display = 'flex';
+    }
+  } else {
+    PACKS.forEach(function(p){ p._afterSchool = false; });
+    banner.style.display = 'none';
+  }
 }
 
 /* ============================================================
@@ -1464,7 +1460,7 @@ function calcularHoraTermino() {
   const detalle = ge('hf-detalle');
   if (detalle) {
     let partes = [pack.horasBase + ' hs base'];
-    if (pack.horasExtra > 0) partes.push(pack.horasExtra + ' hs gratis incluida en pack');
+    if (pack.horasExtra > 0) partes.push(pack.horasExtra + ' hs regalada - incluida en ' + pack.nom);
     EXTRAS.forEach(function(e, i) {
       var q = selExtrasQty[i] || 0;
       if (esHoraExtra(e.nombre) && q > 0) partes.push(q + ' hs extra contratada' + (q>1?'s':''));
@@ -1481,31 +1477,21 @@ const ADMIN_KEY  = 'cumplegamer2026';   // ← cambia esta clave
 const BASE_URL   = window.location.origin + window.location.pathname;
 
 function calcularVencimiento(envioISO) {
-  // Parsear siempre como hora local para evitar problemas de timezone
-  var horaLocal, envioLocal;
+  var envioLocal;
   if (typeof envioISO === 'string' && envioISO.indexOf('T') !== -1) {
     var partes = envioISO.split('T');
     var fecha  = partes[0].split('-');
     var hora   = partes[1].substring(0,5).split(':');
-    envioLocal = new Date(
-      parseInt(fecha[0]), parseInt(fecha[1])-1, parseInt(fecha[2]),
-      parseInt(hora[0]),  parseInt(hora[1]), 0, 0
-    );
-  } else {
-    envioLocal = new Date(envioISO);
-  }
-  horaLocal = envioLocal.getHours();
-
+    envioLocal = new Date(parseInt(fecha[0]), parseInt(fecha[1])-1, parseInt(fecha[2]),
+                          parseInt(hora[0]), parseInt(hora[1]), 0, 0);
+  } else { envioLocal = new Date(envioISO); }
+  var h = envioLocal.getHours();
   var vence = new Date(envioLocal);
-
-  if (horaLocal >= 0 && horaLocal < 9) {
-    // Madrugada (00:00 - 08:59) → plazo hasta las 12:00 del mismo día
+  if (h >= 0 && h < 9) {
     vence.setHours(12, 0, 0, 0);
-  } else if (horaLocal >= 9 && horaLocal < 19) {
-    // Día (09:00 - 18:59) → 5 horas desde el envío
+  } else if (h >= 9 && h < 19) {
     vence = new Date(envioLocal.getTime() + 5 * 60 * 60 * 1000);
   } else {
-    // Noche (19:00 - 23:59) → hasta las 12:00 del día siguiente
     vence.setDate(vence.getDate() + 1);
     vence.setHours(12, 0, 0, 0);
   }
@@ -1595,36 +1581,26 @@ function copiarLink() {
 
 function abrirWhatsapp() {
   const link = ge('link-texto').textContent;
-  const msg  = '¡Hola! 🎮 Te enviamos el catálogo de CumpleGamer. Si contratas antes del plazo, ¡te regalamos 1 hora extra gratis! 👉 ' + link;
+  const msg  = 'Hola! Te enviamos el catalogo de CumpleGamer. Si contratas antes del plazo, te regalamos 1 hora extra gratis! ' + link;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-  // Auto-refresh del link box: muestra confirmación visual
-  const box = ge('link-box');
-  box.style.transition = 'background .3s';
+  var box = ge('link-box');
   box.style.background = 'rgba(13,148,136,.18)';
-  const confirmMsg = document.createElement('div');
-  confirmMsg.id = 'whatsapp-confirm';
-  confirmMsg.style.cssText = 'margin-top:8px;font-size:.8rem;color:var(--green);font-weight:700;';
-  confirmMsg.textContent = '✓ WhatsApp abierto — link enviado';
-  // Evitar duplicados
   var prev = document.getElementById('whatsapp-confirm');
   if (prev) prev.remove();
-  box.appendChild(confirmMsg);
-  // Resetear después de 4 segundos para nuevo envío
+  var cm = document.createElement('div');
+  cm.id = 'whatsapp-confirm';
+  cm.style.cssText = 'margin-top:8px;font-size:.8rem;color:var(--green);font-weight:700';
+  cm.textContent = 'WhatsApp abierto - link enviado';
+  box.appendChild(cm);
   setTimeout(function() {
     box.style.background = '';
-    // Limpiar confirmación
-    var c = document.getElementById('whatsapp-confirm');
-    if (c) c.remove();
-    // Resetear fecha/hora al momento actual para facilitar nuevo envío
-    var now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    var c = document.getElementById('whatsapp-confirm'); if (c) c.remove();
+    var now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     ge('admin-dt').value = now.toISOString().slice(0,16);
-    // Ocultar link box para que quede listo para el próximo
     ge('link-box').style.display = 'none';
-    // Mostrar toast de listo
     var toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--teal);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3)';
-    toast.textContent = '🎮 Listo para generar el próximo link';
+    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--teal);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999';
+    toast.textContent = 'Listo para el proximo link';
     document.body.appendChild(toast);
     setTimeout(function(){ toast.remove(); }, 2500);
   }, 4000);
