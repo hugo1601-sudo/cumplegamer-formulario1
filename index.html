@@ -320,6 +320,7 @@
       </div>
     </div>
   </div>
+  <div id="traslado-aviso" style="display:none;font-size:.78rem;color:var(--teal2);background:rgba(13,148,136,.08);border:1px solid rgba(13,148,136,.25);border-radius:7px;padding:5px 10px;margin-top:-4px;margin-bottom:8px"></div>
 
   <!-- FESTEJADO -->
   <div class="section-head"><div class="icon">🎂</div><h2>El/la festejado/a</h2><div class="line"></div></div>
@@ -404,6 +405,8 @@
    APPS SCRIPT ENDPOINT — solo cambia esta línea si re-despliegas
 ============================================================ */
 const API = 'https://script.google.com/macros/s/AKfycbznjFlWZeijaKYwyLippvWSWVPKKE4-lnVp0dZ6MyiYfZxJqYpuQPK4sl4UKic6T65l/exec';
+const CSV_TARIFAS_RM    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=0&single=true&output=csv';
+const CSV_TARIFAS_OTRAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=1944527052&single=true&output=csv';
 
 /* ============================================================
    CONFIGURACIÓN ESTÁTICA DE PACKS
@@ -497,7 +500,9 @@ const FB = {
    ESTADO
 ============================================================ */
 let PACKS=[], INV=[], EXTRAS=[], COMUNAS_SANTIAGO=[], COMUNAS_OTRAS=[];
-let FERIADOS_CACHE = {}; // {YYYY: Set de fechas 'YYYY-MM-DD'}
+let FERIADOS_CACHE = {};
+let TARIFAS_RM = {}, TARIFAS_OTRAS = {};
+let tarifaTraslado = 0;
 let selPack=null, cQty={}, selExtras={}, selExtrasQty={}, selModulosConsolas={};
 let stockComprometido = {}; // {nombreItem: cantidadComprometida} para la fecha seleccionada
 let cargandoStockFecha = false;
@@ -596,11 +601,13 @@ async function fetchSheet(sheet) {
 ============================================================ */
 async function init() {
   try {
-    const [rP, rE, rI, rC] = await Promise.all([
+    const [rP, rE, rI, rC, rTRM, rTOT] = await Promise.all([
       fetchSheet('packs'),
       fetchSheet('extras'),
       fetchSheet('inventario'),
-      fetchSheet('comunas').catch(function(e){ console.warn('Comunas fetch falló, usando fallback:', e.message); return null; })
+      fetchSheet('comunas').catch(function(e){ console.warn('Comunas fetch falló:', e.message); return null; }),
+      fetchSheet('tarifas_rm').catch(function(){ return null; }),
+      fetchSheet('tarifas_otras').catch(function(){ return null; })
     ]);
 
     PACKS  = parsePacks(rP.rows, rP.raw);
@@ -615,6 +622,8 @@ async function init() {
       renderComunaList('');
     }
 
+    if (rTRM && rTRM.rows) parseTarifas(rTRM.rows, 'rm');
+    if (rTOT && rTOT.rows) parseTarifas(rTOT.rows, 'otras');
     if (!INV.length || !EXTRAS.length) throw new Error('Datos incompletos');
 
     banner('ok', '✓ Precios y stock cargados en tiempo real desde Google Sheets.');
@@ -676,6 +685,28 @@ async function esDiaHabilAfterSchool(fechaStr) {
 /* ============================================================
    COMUNAS — parseo y selector interactivo
 ============================================================ */
+function parseTarifas(rows, tipo) {
+  if (!rows || !rows.length) return;
+  rows.forEach(function(r) {
+    var comunaKey = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'comuna'; });
+    var valorKey  = Object.keys(r).find(function(k){ return k.trim().toLowerCase() === 'valor final'; });
+    if (!comunaKey || !valorKey) return;
+    var comuna = (r[comunaKey]||'').trim();
+    var valor  = parseInt((r[valorKey]||'0').toString().replace(/[^0-9]/g,'')) || 0;
+    if (!comuna) return;
+    if (tipo === 'rm')    TARIFAS_RM[comuna]    = valor;
+    if (tipo === 'otras') TARIFAS_OTRAS[comuna] = valor;
+  });
+  console.log('Tarifas ' + tipo + ' cargadas:', Object.keys(tipo==='rm'?TARIFAS_RM:TARIFAS_OTRAS).length);
+}
+
+function getTarifaComuna(nombre) {
+  if (!nombre) return 0;
+  if (TARIFAS_RM[nombre]    !== undefined) return TARIFAS_RM[nombre];
+  if (TARIFAS_OTRAS[nombre] !== undefined) return TARIFAS_OTRAS[nombre];
+  return 0;
+}
+
 function parseComunas(rows) {
   COMUNAS_SANTIAGO = [];
   COMUNAS_OTRAS    = [];
@@ -744,7 +775,18 @@ function cerrarComunaDropdown() {
 function seleccionarComuna(nombre) {
   document.getElementById('comuna').value         = nombre;
   document.getElementById('comuna-display').value = nombre;
+  tarifaTraslado = getTarifaComuna(nombre);
   cerrarComunaDropdown();
+  if (selPack) updateResumen();
+  var elT = document.getElementById('traslado-aviso');
+  if (elT) {
+    if (tarifaTraslado > 0) {
+      elT.textContent = 'Traslado a ' + nombre + ': ' + fmt(tarifaTraslado);
+      elT.style.display = 'block';
+    } else {
+      elT.style.display = 'none';
+    }
+  }
 }
 
 function seleccionarComunaEl(el) {
@@ -1161,6 +1203,13 @@ function updateResumen() {
     }
   });
 
+  // Traslado según comuna seleccionada
+  if (tarifaTraslado > 0) {
+    var comunaNom = ge('comuna') ? ge('comuna').value : '';
+    total += tarifaTraslado;
+    items.push({lbl: 'Traslado - ' + comunaNom, val: fmt(tarifaTraslado)});
+  }
+
   ge('r-items').innerHTML = items.map(i=>
     `<div class="r-row"><span>${i.lbl}</span><span class="r-val">${i.val}</span></div>`
   ).join('');
@@ -1270,8 +1319,9 @@ function enviar() {
     horaInicio:   gv('hi'),
     horaTermino:  gv('hf'),
     pack:         pack.nom,
+    traslado:     tarifaTraslado > 0 ? fmt(tarifaTraslado) : '',
     precioPack:   fmt(pack.precio),
-    precioAnt:    esAnt ? fmt(pack.precioDesc) : '',
+    precioAnt:    (function(){ if (!esAnt) return ''; var base = precioActivo(pack); var extT = EXTRAS.reduce(function(s,e,i){ return s+(selExtrasQty[i]||0)*e.precio; },0); return fmt(Math.round((base+extT+tarifaTraslado)*0.5)); })(),
     total:        ge('r-total').textContent,
     consolas:     conStr,
     stockVerif:   JSON.stringify(Object.fromEntries(
