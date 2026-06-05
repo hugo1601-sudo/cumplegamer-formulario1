@@ -298,7 +298,15 @@
     <div class="field"><label>Nombre completo *</label><input type="text"  id="nombre"   placeholder="Tu nombre completo"></div>
     <div class="field"><label>Teléfono *</label>        <input type="tel"   id="telefono" placeholder="+56 9 XXXX XXXX"></div>
   </div>
-  <div class="field"><label>Correo electrónico *</label><input type="email" id="email" placeholder="correo@ejemplo.cl"></div>
+  <div class="grid2">
+    <div class="field">
+      <label>RUT *</label>
+      <input type="text" id="rut" placeholder="Ej: 12.345.678-9" maxlength="12"
+             oninput="formatearRut(this)" autocomplete="off">
+      <div id="rut-error" style="font-size:.75rem;color:var(--red);margin-top:3px;display:none">RUT no válido</div>
+    </div>
+    <div class="field"><label>Correo electrónico *</label><input type="email" id="email" placeholder="correo@ejemplo.cl"></div>
+  </div>
   <div class="grid2">
     <div class="field"><label>Dirección</label><input type="text" id="direccion" placeholder="Calle y número"></div>
     <div class="field">
@@ -404,7 +412,7 @@
 /* ============================================================
    APPS SCRIPT ENDPOINT — solo cambia esta línea si re-despliegas
 ============================================================ */
-const API = 'https://script.google.com/macros/s/AKfycbwM-QRO_UMTpy4gUElHaWakHZa1BobZtN46VbFoYFoaSNR3NOyo-DCmZveuuWq40mZR/exec';
+const API = 'https://script.google.com/macros/s/AKfycbydMA72LEOSrrc0mzjoWuJcsMALofkZ-iCuVffhzgyb9WDpRSPIpH5s5ToYydKbDD4J/exec';
 const CSV_TARIFAS_RM    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=0&single=true&output=csv';
 const CSV_TARIFAS_OTRAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiASYpSnlh3vxdB7H9IeDMLRijuk7rGnnTj3vBPYb0LPn5qyC-upNiAsCZg-rSh0bABHVfF2OX0qjW/pub?gid=1944527052&single=true&output=csv';
 
@@ -1013,6 +1021,42 @@ function ps5Disponibles() {
   });
   return Math.max(0, total - ocupadas);
 }
+/* ── RUT chileno ── */
+function formatearRut(input) {
+  var val = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
+  if (val.length > 9) val = val.substring(0, 9);
+  if (val.length > 1) {
+    var cuerpo = val.slice(0, -1);
+    var dv     = val.slice(-1);
+    // Formatear cuerpo con puntos
+    cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    input.value = cuerpo + '-' + dv;
+  } else {
+    input.value = val;
+  }
+  // Validar en tiempo real
+  var errEl = document.getElementById('rut-error');
+  if (errEl) errEl.style.display = validarRut(input.value) ? 'none' : (input.value.length > 3 ? 'block' : 'none');
+}
+
+function validarRut(rut) {
+  if (!rut) return false;
+  var clean = rut.replace(/[.\s]/g, '').toUpperCase();
+  var match = clean.match(/^(\d{1,8})-([0-9K])$/);
+  if (!match) return false;
+  var cuerpo = match[1];
+  var dv     = match[2];
+  // Calcular dígito verificador
+  var suma = 0, mult = 2;
+  for (var i = cuerpo.length - 1; i >= 0; i--) {
+    suma += parseInt(cuerpo[i]) * mult;
+    mult = mult === 7 ? 2 : mult + 1;
+  }
+  var dvCalc = 11 - (suma % 11);
+  var dvEsp  = dvCalc === 11 ? '0' : dvCalc === 10 ? 'K' : String(dvCalc);
+  return dv === dvEsp;
+}
+
 function esHoraExtra(nombre) {
   return nombre.toLowerCase().includes('hora extra') || nombre.toLowerCase().includes('hora adicional');
 }
@@ -1264,7 +1308,7 @@ function updateResumen() {
    ENVIAR
 ============================================================ */
 function enviar() {
-  const campos = ['nombre','email','telefono','festejado','edad','lugar','fecha'];
+  const campos = ['nombre','rut','email','telefono','festejado','edad','lugar','fecha'];
   let ok = true;
   campos.forEach(function(id) {
     const el = ge(id);
@@ -1301,6 +1345,7 @@ function enviar() {
 
   const pack   = PACKS.find(function(p){ return p.id===selPack; });
   const gv     = function(id){ return ge(id).value; };
+  if (!validarRut(gv('rut'))) { alert('Por favor ingresa un RUT válido (ej: 12.345.678-9).'); ge('rut').focus(); return; }
   const precio = precioActivo(pack);
   const esAnt  = conAnticipacion() && pack.precioDesc < pack.precio;
 
@@ -1352,6 +1397,7 @@ function enviar() {
   // ── Guardar en Google Sheets ──────────────────────────────
   const payload = {
     nombre:       gv('nombre'),
+    rut:          gv('rut'),
     email:        gv('email'),
     telefono:     gv('telefono'),
     direccion:    gv('direccion') || '',
@@ -1401,6 +1447,7 @@ function enviar() {
     'Nueva reserva CumpleGamer\n' +
     '─────────\n' +
     'Cliente:    ' + gv('nombre')    + '\n' +
+    'RUT:        ' + gv('rut')       + '\n' +
     'Email:      ' + gv('email')     + '\n' +
     'Teléfono:   ' + gv('telefono')  + '\n' +
     'Dirección:  ' + (gv('direccion')||'No indicada') + ', ' + (gv('comuna')||'') + '\n' +
