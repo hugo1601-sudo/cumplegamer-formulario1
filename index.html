@@ -1318,7 +1318,6 @@ function enviar() {
   if (!selPack)  { alert('Por favor selecciona un pack.');            return; }
   if (!totalC()) { alert('Por favor selecciona al menos 1 consola.'); return; }
   if (!ok)       { alert('Por favor completa todos los campos obligatorios (*).'); return; }
-  if (!validarRut(gv('rut'))) { alert('Por favor ingresa un RUT válido (ej: 12.345.678-9).'); ge('rut').focus(); return; }
 
   // Verificar que el stock sigue disponible para la fecha elegida
   var conflictos = [];
@@ -1346,6 +1345,7 @@ function enviar() {
 
   const pack   = PACKS.find(function(p){ return p.id===selPack; });
   const gv     = function(id){ return ge(id).value; };
+  if (!validarRut(gv('rut'))) { alert('Por favor ingresa un RUT válido (ej: 12.345.678-9).'); ge('rut').focus(); return; }
   const precio = precioActivo(pack);
   const esAnt  = conAnticipacion() && pack.precioDesc < pack.precio;
 
