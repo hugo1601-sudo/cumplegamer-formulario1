@@ -422,13 +422,13 @@ const CSV_TARIFAS_OTRAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiAS
 ============================================================ */
 const PACK_CFG = {
   'Pack Start': {
-    id:'start', badge:'Básico', cls:'b-start', min:1, max:2,
+    id:'start', badge:'Básico', cls:'b-start', min:1, max:1,
     horasBase:4, horasExtra:0,
-    tag:'1 o 2 consolas a elegir',
+    tag:'1 consola a elegir',
     blocked:[], blockedReason:{},
-    items:['1-2 Consolas a elección','2 Controles por consola',
-           '1 TV 40" + rack desplazable por consola',
-           '1 Peluche decorativo por consola',
+    items:['1 Consola a elección','2 Controles',
+           '1 TV 40" + rack desplazable',
+           '1 Peluche decorativo',
            'Decoración gamer (cortina gamer)',
            'Tarjeta virtual de invitación','4 Horas de juego libre']
   },
@@ -915,7 +915,7 @@ function renderConsolas() {
   const max=pack.max, cur=totalC();
 
   ge('qty-banner').textContent =
-    `▸ Selecciona ${pack.id==='start'?'1 o 2':max} consola${max>1?'s':''} — ${cur}/${max} seleccionadas`;
+    `▸ Selecciona ${max} consola${max>1?'s':''} — ${cur}/${max} seleccionadas`;
 
   ge('consolas-list').innerHTML = INV.map(c => {
     const reservadas   = getReservado(pack, c.nombre);
