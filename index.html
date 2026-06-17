@@ -1225,6 +1225,14 @@ function toggleExtra(i) {
   renderExtras(); updateResumen(); calcularHoraTermino();
 }
 
+function asignarConsolaModulo(extraIdx, slot, valor) {
+  if (!selModulosConsolas[extraIdx]) selModulosConsolas[extraIdx] = {};
+  selModulosConsolas[extraIdx][slot] = valor;
+  // Re-renderizar sin perder el estado — solo actualizar resumen
+  updateResumen();
+  calcularHoraTermino();
+}
+
 function changeExtraQty(i, delta) {
   var e      = EXTRAS[i];
   var isHora = esHoraExtra(e.nombre);
