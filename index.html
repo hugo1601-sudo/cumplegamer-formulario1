@@ -806,15 +806,6 @@ function renderComunaList(filtro) {
       });
       html += '</div>';
     }
-    if (otras.length) {
-      html += '<div class="comuna-group"><div class="comuna-group-label">🗺️ Otras regiones</div>';
-      otras.forEach(function(c) {
-        var cls = c===selVal ? ' selected' : '';
-        var cn  = c.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-        html += '<div class="comuna-option' + cls + '" data-val="' + cn + '" onclick="seleccionarComunaEl(this)">' + c + '</div>';
-      });
-      html += '</div>';
-    }
   }
   list.innerHTML = html;
 }
